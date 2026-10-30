@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" fill="none" stroke="#f0eee2" stroke-linecap="round">
+  <defs><filter id="chalk" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence baseFrequency=".48" numOctaves="2" seed="8" result="noise"/><feDisplacementMap in="SourceGraphic" in2="noise" scale="1.7"/></filter></defs>
+  <g filter="url(#chalk)">
+    <path opacity=".7" stroke-width="3.6" d="M199 12Q202 184 199 301T201 588M401 13Q397 190 400 304T399 587M12 201Q167 198 303 200T588 199M13 399Q173 402 303 400T587 401"/>
+    <path opacity=".22" stroke-width="1.3" d="M201 16Q204 192 201 300T203 583M399 17Q395 196 398 308T397 582M17 203Q173 200 304 202T582 201M16 397Q172 400 305 398T584 399"/>
+  </g>
+</svg>

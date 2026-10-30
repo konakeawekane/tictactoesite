@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173c2d">
+  <title>Chalk Tic-Tac-Toe</title>
+  <link rel="preload" href="./assets/cabin-sketch-ui.ttf" as="font" type="font/ttf" crossorigin>
+  <style>
+    @font-face {
+      font-family: "Cabin Sketch";
+      src: url("./assets/cabin-sketch-ui.ttf") format("truetype");
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+    }
+
+    :root {
+      color-scheme: dark;
+      --board: #173c2d;
+      --board-dark: #102e23;
+      --chalk: #f0eee2;
+      --chalk-dim: rgba(240, 238, 226, .52);
+      --best: #48d48b;
+      --good: #5fa8ff;
+      --poor: #ff6579;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { min-height: 100%; }
+
+    body {
+      margin: 0;
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      font-family: "Cabin Sketch", "Segoe Print", system-ui, sans-serif;
+      color: var(--chalk);
+      background:
+        radial-gradient(ellipse at 45% 35%, rgba(166,190,151,.09), transparent 65%),
+        radial-gradient(ellipse at center, transparent 36%, rgba(0,0,0,.22) 100%),
+        var(--board);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .13;
+      background-image:
+        repeating-linear-gradient(7deg, transparent 0 9px, rgba(255,255,255,.045) 10px, transparent 11px),
+        repeating-linear-gradient(97deg, transparent 0 14px, rgba(0,0,0,.08) 15px, transparent 16px);
+      mix-blend-mode: soft-light;
+    }
+
+    button, select { font: inherit; }
+
+    .play-space {
+      position: relative;
+      width: min(680px, calc(100vw - 32px), calc(100svh - 96px));
+      padding-top: 64px;
+    }
+
+    .board {
+      position: relative;
+      isolation: isolate;
+      width: 100%;
+      aspect-ratio: 1;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: repeat(3, minmax(0, 1fr));
+      filter: drop-shadow(0 18px 32px rgba(0,0,0,.12));
+    }
+
+    .board::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      background: url("./assets/chalk-grid.svg") center / 100% 100% no-repeat;
+    }
+
+    .square {
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      place-items: center;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      border: 0;
+      border-radius: 8% 6% 9% 5%;
+      color: var(--chalk);
+      background: transparent;
+      cursor: pointer;
+      font-family: "Cabin Sketch", "Segoe Print", system-ui, sans-serif;
+      font-size: clamp(3.8rem, 18vmin, 9.2rem);
+      font-weight: 400;
+      font-synthesis: none;
+      line-height: 1;
+      text-align: center;
+      text-shadow: 1px 0 rgba(255,255,255,.24), -1px 1px rgba(255,255,255,.14), 0 0 8px rgba(255,255,255,.08);
+      transition: background-color .18s ease, box-shadow .18s ease, opacity .18s ease;
+    }
+
+    .square:not(:disabled):hover { background: rgba(255,255,255,.055); }
+    .square:disabled { cursor: default; }
+    .square.best { color: var(--best); background: rgba(72, 212, 139, .10); }
+    .square.good { color: var(--good); background: rgba(95, 168, 255, .10); }
+    .square.poor { color: var(--poor); background: rgba(255, 101, 121, .10); }
+    .square.win { outline: 3px dashed rgba(240, 238, 226, .72); outline-offset: -10px; }
+
+    .controls {
+      position: absolute;
+      top: 0;
+      right: 0;
+      z-index: 10;
+    }
+
+    .icon-control {
+      width: 46px;
+      height: 46px;
+      display: grid;
+      place-items: center;
+      margin: 0;
+      padding: 9px;
+      border: 0;
+      border-radius: 10px 8px 12px 7px;
+      color: var(--chalk);
+      background: transparent;
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+      opacity: .7;
+      transition: background .16s ease, opacity .16s ease;
+    }
+
+    .controls summary::-webkit-details-marker { display: none; }
+    .icon-control:hover, .controls[open] summary { opacity: 1; background: rgba(240,238,226,.055); }
+    .icon-control:focus-visible { outline: 2px dashed var(--chalk); outline-offset: 3px; }
+    .icon-control img { width: 28px; height: 28px; display: block; pointer-events: none; }
+    .reset { position: absolute; top: 0; left: 0; }
+    .reset img { transition: transform .2s ease; }
+    .reset:hover img { transform: rotate(-20deg); }
+
+    .menu {
+      position: absolute;
+      top: 50px;
+      right: 0;
+      width: min(260px, calc(100vw - 32px));
+      padding: 16px;
+      display: grid;
+      gap: 13px;
+      border: 1px solid rgba(240, 238, 226, .38);
+      outline: 1px solid rgba(240, 238, 226, .13);
+      outline-offset: -5px;
+      border-radius: 4px 10px 5px 9px;
+      background: rgba(16, 46, 35, .98);
+      box-shadow: 0 16px 38px rgba(0,0,0,.28);
+      backdrop-filter: blur(12px);
+    }
+
+    label span {
+      display: block;
+      margin: 0 0 6px 2px;
+      color: rgba(240, 238, 226, .68);
+      font-size: 1rem;
+      font-weight: 400;
+      letter-spacing: .035em;
+    }
+
+    select {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid rgba(240, 238, 226, .28);
+      border-radius: 7px;
+      color: var(--chalk);
+      background: #173c2d;
+      outline: 0;
+      font-size: 1.1rem;
+    }
+
+    select { padding: 0 10px; }
+    select:focus { border-color: var(--chalk); box-shadow: 0 0 0 2px rgba(240,238,226,.14); }
+    label[hidden] { display: none; }
+
+    @media (max-width: 520px) {
+      .play-space { width: min(calc(100vw - 24px), calc(100svh - 88px)); padding-top: 56px; }
+      .menu { top: 48px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="play-space">
+    <button class="icon-control reset" id="newGame" type="button" aria-label="Reset game" title="Reset game">
+      <img src="./assets/reset.svg" alt="" width="28" height="28">
+    </button>
+    <details class="controls" id="controls">
+      <summary class="icon-control" aria-label="Game settings" title="Game settings">
+        <img src="./assets/menu.svg" alt="" width="28" height="28">
+      </summary>
+      <div class="menu">
+        <label>
+          <span>Game mode</span>
+          <select id="mode">
+            <option value="human-ai">Player vs AI</option>
+            <option value="human-human">Player vs Player</option>
+            <option value="ai-ai">AI vs AI</option>
+          </select>
+        </label>
+        <label id="firstWrap">
+          <span>First move</span>
+          <select id="first">
+            <option value="human">Player</option>
+            <option value="ai">AI</option>
+          </select>
+        </label>
+      </div>
+    </details>
+    <div class="board" id="board" aria-label="Tic-tac-toe board"></div>
+  </main>
+
+  <script>
+    const CELLS = ["top left", "top middle", "top right", "middle left", "center", "middle right", "bottom left", "bottom middle", "bottom right"];
+    const WIN_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    const boardElement = document.querySelector("#board");
+    const modeSelect = document.querySelector("#mode");
+    const firstSelect = document.querySelector("#first");
+    const firstWrap = document.querySelector("#firstWrap");
+    const controls = document.querySelector("#controls");
+
+    let policy = null;
+    let board = Array(9).fill(0);
+    let grades = Array(9).fill("");
+    let turn = 1;
+    let finished = false;
+    let generation = 0;
+    const solveCache = new Map();
+
+    for (let index = 0; index < 9; index++) {
+      const square = document.createElement("button");
+      square.type = "button";
+      square.className = "square";
+      square.dataset.index = index;
+      square.setAttribute("aria-label", CELLS[index]);
+      square.addEventListener("click", () => humanMove(index));
+      boardElement.append(square);
+    }
+
+    function winner(position) {
+      for (const line of WIN_LINES) {
+        const [a, b, c] = line;
+        if (position[a] && position[a] === position[b] && position[a] === position[c]) {
+          return { player: position[a], line };
+        }
+      }
+      return { player: 0, line: [] };
+    }
+
+    function legalMoves(position) {
+      return position.flatMap((value, index) => value === 0 ? [index] : []);
+    }
+
+    function solve(position, player) {
+      const won = winner(position).player;
+      if (won) return won;
+      const legal = legalMoves(position);
+      if (!legal.length) return 0;
+      const key = `${position.join("")}:${player}`;
+      if (solveCache.has(key)) return solveCache.get(key);
+      const outcomes = legal.map(move => {
+        const next = [...position];
+        next[move] = player;
+        return solve(next, -player);
+      });
+      const result = player === 1 ? Math.max(...outcomes) : Math.min(...outcomes);
+      solveCache.set(key, result);
+      return result;
+    }
+
+    function fallbackMove(position, player) {
+      const ranked = legalMoves(position).map(move => {
+        const next = [...position];
+        next[move] = player;
+        return [move, solve(next, -player)];
+      });
+      const target = player === 1
+        ? Math.max(...ranked.map(([, score]) => score))
+        : Math.min(...ranked.map(([, score]) => score));
+      return ranked.find(([, score]) => score === target)[0];
+    }
+
+    function policyMove(position, player) {
+      const perspective = position.map(value => value * player);
+      let reference = policy.root;
+      while (reference >= 9) {
+        const node = policy.nodes[reference - 9];
+        reference = node.children[perspective[node.cell] + 1];
+      }
+      return position[reference] === 0 ? reference : fallbackMove(position, player);
+    }
+
+    function actors() {
+      if (modeSelect.value === "human-human") return { 1: "human", [-1]: "human" };
+      if (modeSelect.value === "ai-ai") return { 1: "ai", [-1]: "ai" };
+      return firstSelect.value === "human"
+        ? { 1: "human", [-1]: "ai" }
+        : { 1: "ai", [-1]: "human" };
+    }
+
+    function gradeMove(move) {
+      if (move === policyMove(board, turn)) return "best";
+      const next = [...board];
+      next[move] = turn;
+      const opponent = -turn;
+      return solve(next, opponent) === opponent ? "poor" : "good";
+    }
+
+    function humanMove(move) {
+      if (!policy || finished || actors()[turn] !== "human" || board[move] !== 0) return;
+      makeMove(move, gradeMove(move));
+    }
+
+    function makeMove(move, grade = "") {
+      board[move] = turn;
+      grades[move] = grade;
+      const result = winner(board);
+      if (result.player || !legalMoves(board).length) {
+        finished = true;
+        render(result.line);
+        return;
+      }
+      turn = -turn;
+      render();
+      scheduleAi();
+    }
+
+    function scheduleAi() {
+      if (finished || !policy || actors()[turn] !== "ai") return;
+      const activeGeneration = generation;
+      window.setTimeout(() => {
+        if (activeGeneration !== generation || finished || actors()[turn] !== "ai") return;
+        makeMove(policyMove(board, turn));
+      }, modeSelect.value === "ai-ai" ? 560 : 360);
+    }
+
+    function render(winningLine = []) {
+      const actorMap = actors();
+      boardElement.querySelectorAll(".square").forEach((square, index) => {
+        const value = board[index];
+        const grade = grades[index] ? ` ${grades[index]}` : "";
+        const win = winningLine.includes(index) ? " win" : "";
+        square.textContent = value === 1 ? "X" : value === -1 ? "O" : "";
+        square.className = `square${grade}${win}`;
+        square.disabled = !policy || finished || actorMap[turn] !== "human" || value !== 0;
+      });
+    }
+
+    function newGame() {
+      generation++;
+      board = Array(9).fill(0);
+      grades = Array(9).fill("");
+      turn = 1;
+      finished = false;
+      firstWrap.hidden = modeSelect.value !== "human-ai";
+      controls.open = false;
+      render();
+      scheduleAi();
+    }
+
+    document.querySelector("#newGame").addEventListener("click", newGame);
+    modeSelect.addEventListener("change", newGame);
+    firstSelect.addEventListener("change", newGame);
+    document.addEventListener("pointerdown", event => {
+      if (!controls.contains(event.target)) controls.open = false;
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && controls.open) {
+        controls.open = false;
+        controls.querySelector("summary").focus();
+      }
+    });
+
+    fetch("./logic_policy.json")
+      .then(response => {
+        if (!response.ok) throw new Error(`Policy request failed (${response.status})`);
+        return response.json();
+      })
+      .then(model => {
+        if (model.format !== "sparse-ternary-logic-policy-v1" || model.source_accuracy !== 1) {
+          throw new Error("Invalid policy model");
+        }
+        policy = model;
+        newGame();
+      })
+      .catch(error => {
+        console.error(error);
+        boardElement.setAttribute("aria-label", "The game model could not be loaded");
+      });
+  </script>
+</body>
+</html>
